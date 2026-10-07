@@ -1,0 +1,215 @@
+@model VentaCrearVM
+@{
+    ViewData["Title"] = "Nueva venta";
+    var clientes = (List<Cliente>)ViewBag.Clientes;
+    var productos = (List<Producto>)ViewBag.Productos;
+    var itemsIniciales = Model.Items.Any() ? Model.Items : new List<ItemVM> { new() };
+}
+
+<div class="page-header">
+    <h1 class="page-title"><i class="bi bi-bag-plus-fill"></i> Nueva venta</h1>
+    <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<form asp-action="Create" method="post" id="formVenta">
+    <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+    <div class="row g-3">
+        <div class="col-xl-8">
+            <div class="card mb-3">
+                <div class="card-header"><i class="bi bi-person-heart me-1"></i> Cliente y fecha</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label asp-for="ClienteId" class="form-label"></label>
+                            <div class="input-group">
+                                <select asp-for="ClienteId" class="form-select" required>
+                                    <option value="">— Seleccione un cliente —</option>
+                                    @foreach (var c in clientes)
+                                    {
+                                        <option value="@c.Id">@c.Nombre @(c.Telefono != null ? "· " + c.Telefono : "")</option>
+                                    }
+                                </select>
+                                <a asp-controller="Clientes" asp-action="Create" asp-route-volverA="venta" class="btn btn-soft" title="Registrar cliente nuevo"><i class="bi bi-person-plus"></i></a>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <label asp-for="Fecha" class="form-label"></label>
+                            <input asp-for="Fecha" type="datetime-local" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-phone me-1"></i> Productos</span>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnAgregar"><i class="bi bi-plus-lg"></i> Agregar producto</button>
+                </div>
+                <div class="card-body" id="items">
+                    @if (!productos.Any())
+                    {
+                        <div class="vacio"><i class="bi bi-box-seam"></i>Primero registra productos en el inventario.
+                            <div class="mt-2"><a asp-controller="Productos" asp-action="Create" class="btn btn-sm btn-primary">Crear producto</a></div>
+                        </div>
+                    }
+                    @foreach (var item in itemsIniciales)
+                    {
+                        <div class="item-row row g-2 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label small mb-1">Producto</label>
+                                <select class="form-select sel-producto" data-name="ProductoId">
+                                    <option value="">— Producto —</option>
+                                    @foreach (var p in productos)
+                                    {
+                                        <option value="@p.Id" data-precio="@p.Precio.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-stock="@p.Cantidad"
+                                                disabled="@(p.Cantidad == 0)" selected="@(p.Id == item.ProductoId)">
+                                            @p.Nombre (@(p.Cantidad == 0 ? "agotado" : p.Cantidad + " disp."))
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-4 col-md-2">
+                                <label class="form-label small mb-1">Cantidad</label>
+                                <input type="number" min="1" class="form-control inp-cantidad" data-name="Cantidad" value="@(item.Cantidad > 0 ? item.Cantidad : 1)" />
+                            </div>
+                            <div class="col-8 col-md-3">
+                                <label class="form-label small mb-1">Precio unidad</label>
+                                <input type="number" min="0" step="any" class="form-control inp-precio" data-name="PrecioUnitario" value="@(item.PrecioUnitario > 0 ? item.PrecioUnitario.ToString(System.Globalization.CultureInfo.InvariantCulture) : "")" />
+                            </div>
+                            <div class="col-10 col-md-1 text-md-end">
+                                <div class="small text-secondary">Subtotal</div>
+                                <div class="fw-bold subtotal text-oscuro">$0</div>
+                            </div>
+                            <div class="col-2 col-md-1 text-end">
+                                <button type="button" class="btn btn-soft btn-icono text-danger btn-quitar" title="Quitar"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                            <div class="col-12 small text-danger aviso-stock d-none"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card position-sticky" style="top: 1rem">
+                <div class="card-header"><i class="bi bi-receipt me-1"></i> Resumen</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between text-secondary"><span>Unidades</span><span id="totUnidades">0</span></div>
+                    <hr />
+                    <div class="text-secondary small">Total a pagar</div>
+                    <div class="resumen-total" id="totGeneral">$0</div>
+
+                    <div class="mt-3">
+                        <label asp-for="AbonoInicial" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="AbonoInicial" type="number" min="0" step="any" class="form-control" />
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="button" class="btn btn-sm btn-soft flex-fill" id="btnPagoTotal"><i class="bi bi-check2-all"></i> Pagó todo</button>
+                            <button type="button" class="btn btn-sm btn-soft flex-fill" id="btnSinPago"><i class="bi bi-hourglass"></i> Debe todo</button>
+                        </div>
+                        <div class="small mt-2">Queda debiendo: <strong class="text-deuda" id="totSaldo">$0</strong></div>
+                    </div>
+                    <div class="mt-3">
+                        <label asp-for="MetodoPago" class="form-label"></label>
+                        <select asp-for="MetodoPago" asp-items="@(new SelectList(Pago.Metodos))" class="form-select"></select>
+                    </div>
+                    <div class="mt-3">
+                        <label asp-for="Observaciones" class="form-label"></label>
+                        <textarea asp-for="Observaciones" rows="2" class="form-control" placeholder="Envío, color, nota…"></textarea>
+                    </div>
+                    <button class="btn btn-primary w-100 mt-4 py-2"><i class="bi bi-check-circle-fill"></i> Registrar venta</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        const contenedor = document.getElementById('items');
+        const plantilla = contenedor.querySelector('.item-row')?.cloneNode(true);
+        const abono = document.getElementById('AbonoInicial');
+        let total = 0;
+
+        function recalcular() {
+            total = 0;
+            let unidades = 0;
+            const pedidos = {};
+            contenedor.querySelectorAll('.item-row').forEach(fila => {
+                const sel = fila.querySelector('.sel-producto');
+                const cant = parseInt(fila.querySelector('.inp-cantidad').value) || 0;
+                const precio = parseFloat(fila.querySelector('.inp-precio').value) || 0;
+                const sub = cant * precio;
+                fila.querySelector('.subtotal').textContent = cop(sub);
+                total += sub;
+                unidades += cant;
+                if (sel.value) pedidos[sel.value] = (pedidos[sel.value] || 0) + cant;
+            });
+            // Aviso si se pide más de lo que hay en inventario
+            contenedor.querySelectorAll('.item-row').forEach(fila => {
+                const sel = fila.querySelector('.sel-producto');
+                const aviso = fila.querySelector('.aviso-stock');
+                const opt = sel.selectedOptions[0];
+                const stock = opt ? parseInt(opt.dataset.stock) : NaN;
+                if (sel.value && pedidos[sel.value] > stock) {
+                    aviso.textContent = `Solo hay ${stock} unidad(es) disponibles de este producto.`;
+                    aviso.classList.remove('d-none');
+                } else aviso.classList.add('d-none');
+            });
+            document.getElementById('totGeneral').textContent = cop(total);
+            document.getElementById('totUnidades').textContent = unidades;
+            const saldo = Math.max(total - (parseFloat(abono.value) || 0), 0);
+            document.getElementById('totSaldo').textContent = cop(saldo);
+        }
+
+        contenedor.addEventListener('change', e => {
+            if (e.target.classList.contains('sel-producto')) {
+                const opt = e.target.selectedOptions[0];
+                const precio = e.target.closest('.item-row').querySelector('.inp-precio');
+                precio.value = opt && opt.dataset.precio ? opt.dataset.precio : '';
+            }
+            recalcular();
+        });
+        contenedor.addEventListener('input', recalcular);
+        contenedor.addEventListener('click', e => {
+            const btn = e.target.closest('.btn-quitar');
+            if (!btn) return;
+            if (contenedor.querySelectorAll('.item-row').length > 1) btn.closest('.item-row').remove();
+            else { // si es la única fila, solo se limpia
+                const fila = btn.closest('.item-row');
+                fila.querySelector('.sel-producto').value = '';
+                fila.querySelector('.inp-cantidad').value = 1;
+                fila.querySelector('.inp-precio').value = '';
+            }
+            recalcular();
+        });
+
+        document.getElementById('btnAgregar').addEventListener('click', () => {
+            if (!plantilla) return;
+            const nueva = plantilla.cloneNode(true);
+            nueva.querySelector('.sel-producto').value = '';
+            nueva.querySelectorAll('option').forEach(o => o.removeAttribute('selected'));
+            nueva.querySelector('.inp-cantidad').value = 1;
+            nueva.querySelector('.inp-precio').value = '';
+            nueva.querySelector('.aviso-stock').classList.add('d-none');
+            contenedor.appendChild(nueva);
+            recalcular();
+        });
+
+        abono.addEventListener('input', recalcular);
+        document.getElementById('btnPagoTotal').addEventListener('click', () => { abono.value = total; recalcular(); });
+        document.getElementById('btnSinPago').addEventListener('click', () => { abono.value = 0; recalcular(); });
+
+        // Antes de enviar se ponen los nombres Items[0].ProductoId, Items[0].Cantidad... para el servidor
+        document.getElementById('formVenta').addEventListener('submit', () => {
+            contenedor.querySelectorAll('.item-row').forEach((fila, i) => {
+                fila.querySelectorAll('[data-name]').forEach(inp => inp.name = `Items[${i}].${inp.dataset.name}`);
+            });
+        });
+
+        recalcular();
+    </script>
+}

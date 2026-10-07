@@ -1,0 +1,139 @@
+@model Venta
+@{
+    ViewData["Title"] = $"Venta #{Model.Id}";
+    var porcentaje = Model.Total > 0 ? (int)Math.Min(100, Model.TotalPagado * 100 / Model.Total) : 100;
+}
+
+<div class="page-header no-print">
+    <div>
+        <h1 class="page-title"><i class="bi bi-receipt"></i> Venta #@Model.Id</h1>
+        <p class="page-sub">@Model.Fecha.ToString("dddd dd 'de' MMMM yyyy, hh:mm tt", Formato.Co)</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Ventas</a>
+        <button onclick="window.print()" class="btn btn-soft"><i class="bi bi-printer"></i> Imprimir</button>
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" data-confirm="¿Eliminar la venta #@Model.Id? Los productos regresarán al inventario y se borrarán sus pagos.">
+            <button class="btn btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="~/img/logo.png" alt="Alma Case" class="recibo-logo" />
+                        <div>
+                            <h4 class="mb-0">Alma Case</h4>
+                            <div class="small text-secondary">Tecnología y tendencia · @@AlmaCase.col</div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-secondary">Venta</div>
+                        <h4 class="mb-0">#@Model.Id</h4>
+                        <span class="badge @Formato.ClaseEstado(Model.Estado) mt-1">@Model.Estado</span>
+                    </div>
+                </div>
+
+                <div class="bg-hielo rounded-4 p-3 mb-4">
+                    <div class="small text-secondary">Cliente</div>
+                    <a asp-controller="Clientes" asp-action="Details" asp-route-id="@Model.ClienteId" class="fw-bold fs-5 text-decoration-none">@Model.Cliente?.Nombre</a>
+                    <div class="small">
+                        @Model.Cliente?.Telefono @(Model.Cliente?.Ciudad != null ? "· " + Model.Cliente.Ciudad : "")
+                        · @Model.Fecha.Fecha()
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead><tr><th>Producto</th><th class="text-center">Cant.</th><th class="text-end">Precio</th><th class="text-end">Subtotal</th></tr></thead>
+                        <tbody>
+                            @foreach (var d in Model.Detalles)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@d.Producto?.Nombre</td>
+                                    <td class="text-center">@d.Cantidad</td>
+                                    <td class="text-end">@d.PrecioUnitario.Cop()</td>
+                                    <td class="text-end">@d.Subtotal.Cop()</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr><td colspan="3" class="text-end">Total</td><td class="text-end fs-5">@Model.Total.Cop()</td></tr>
+                            <tr><td colspan="3" class="text-end">Pagado</td><td class="text-end text-pagado">@Model.TotalPagado.Cop()</td></tr>
+                            <tr><td colspan="3" class="text-end">Saldo pendiente</td><td class="text-end @(Model.Saldo > 0 ? "text-deuda" : "text-pagado")">@Model.Saldo.Cop()</td></tr>
+                        </tfoot>
+                    </table>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Observaciones))
+                {
+                    <div class="mt-3 small"><strong>Observaciones:</strong> @Model.Observaciones</div>
+                }
+                <div class="text-center mt-4 small text-secondary">¡Gracias por tu compra! 💙</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 no-print">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-pie-chart me-1"></i> Estado del pago</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between small mb-1"><span>Pagado @porcentaje%</span><span>@Model.TotalPagado.Cop() / @Model.Total.Cop()</span></div>
+                <div class="progress mb-3"><div class="progress-bar" style="width:@porcentaje%"></div></div>
+
+                @if (Model.Saldo > 0)
+                {
+                    <form asp-action="RegistrarPago" method="post">
+                        <input type="hidden" name="VentaId" value="@Model.Id" />
+                        <label class="form-label">Registrar pago / abono</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">$</span>
+                            <input type="number" name="Monto" min="1" max="@Model.Saldo.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="any" class="form-control" id="montoPago" required />
+                            <button type="button" class="btn btn-soft" onclick="document.getElementById('montoPago').value='@Model.Saldo.ToString(System.Globalization.CultureInfo.InvariantCulture)'">Todo</button>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <select name="MetodoPago" class="form-select">
+                                    @foreach (var m in Pago.Metodos) { <option>@m</option> }
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <input type="date" name="Fecha" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" />
+                            </div>
+                        </div>
+                        <input name="Nota" class="form-control mb-2" placeholder="Nota (opcional)" />
+                        <button class="btn btn-primary w-100"><i class="bi bi-cash-coin"></i> Guardar pago</button>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-success mb-0"><i class="bi bi-check-circle-fill me-1"></i> Esta venta está pagada.</div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-clock-history me-1"></i> Pagos recibidos</div>
+            <ul class="list-group list-group-flush">
+                @if (!Model.Pagos.Any())
+                {
+                    <li class="list-group-item vacio py-4"><i class="bi bi-wallet2"></i>Aún no hay pagos</li>
+                }
+                @foreach (var p in Model.Pagos)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold text-pagado">@p.Monto.Cop()</div>
+                            <div class="small text-secondary">@p.Fecha.Fecha() · @p.MetodoPago @(p.Nota != null ? "· " + p.Nota : "")</div>
+                        </div>
+                        <form asp-action="EliminarPago" asp-route-id="@p.Id" method="post" data-confirm="¿Eliminar este pago?">
+                            <button class="btn btn-soft btn-icono text-danger" title="Eliminar pago"><i class="bi bi-x-lg"></i></button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>

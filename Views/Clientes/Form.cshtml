@@ -1,0 +1,71 @@
+@model Cliente
+@{
+    bool nuevo = Model.Id == 0;
+    ViewData["Title"] = nuevo ? "Nuevo cliente" : "Editar cliente";
+    string? volverA = ViewBag.VolverA;
+}
+
+<div class="page-header">
+    <h1 class="page-title"><i class="bi @(nuevo ? "bi-person-plus-fill" : "bi-pencil")"></i> @ViewData["Title"]</h1>
+    @if (volverA == "venta")
+    {
+        <a asp-controller="Ventas" asp-action="Create" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Volver a la venta</a>
+    }
+    else
+    {
+        <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Volver</a>
+    }
+</div>
+
+<div class="card" style="max-width: 760px">
+    <div class="card-body p-4">
+        <form asp-action="@(nuevo ? "Create" : "Edit")" method="post">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" name="volverA" value="@volverA" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label asp-for="Nombre" class="form-label"></label>
+                    <input asp-for="Nombre" class="form-control" autofocus />
+                    <span asp-validation-for="Nombre" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Documento" class="form-label"></label>
+                    <input asp-for="Documento" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Telefono" class="form-label"></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-whatsapp"></i></span>
+                        <input asp-for="Telefono" class="form-control" placeholder="300 123 4567" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Instagram" class="form-label"></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-instagram"></i></span>
+                        <input asp-for="Instagram" class="form-control" placeholder="@@usuario" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Ciudad" class="form-label"></label>
+                    <input asp-for="Ciudad" class="form-control" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Direccion" class="form-label"></label>
+                    <input asp-for="Direccion" class="form-control" />
+                </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-end mt-4">
+                <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

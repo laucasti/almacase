@@ -1,0 +1,65 @@
+@model Producto
+@{
+    bool nuevo = Model.Id == 0;
+    ViewData["Title"] = nuevo ? "Nuevo producto" : "Editar producto";
+    var categorias = (List<string>)ViewBag.Categorias;
+}
+
+<div class="page-header">
+    <h1 class="page-title"><i class="bi @(nuevo ? "bi-plus-lg" : "bi-pencil")"></i> @ViewData["Title"]</h1>
+    <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<div class="card" style="max-width: 760px">
+    <div class="card-body p-4">
+        <form asp-action="@(nuevo ? "Create" : "Edit")" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label asp-for="Nombre" class="form-label"></label>
+                    <input asp-for="Nombre" class="form-control" placeholder="Ej: Forro iPhone 15 transparente" autofocus />
+                    <span asp-validation-for="Nombre" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Categoria" class="form-label"></label>
+                    <input asp-for="Categoria" class="form-control" list="listaCategorias" placeholder="Ej: Forros" />
+                    <datalist id="listaCategorias">
+                        @foreach (var c in categorias.Union(new[] { "Forros", "Audífonos", "Cargadores", "Cables", "Protectores", "Accesorios" }).Distinct())
+                        {
+                            <option value="@c"></option>
+                        }
+                    </datalist>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Descripcion" class="form-label"></label>
+                    <textarea asp-for="Descripcion" class="form-control" rows="2" placeholder="Color, referencia, modelo compatible…"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Cantidad" class="form-label"></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
+                        <input asp-for="Cantidad" type="number" min="0" class="form-control" />
+                        <span class="input-group-text">und.</span>
+                    </div>
+                    <span asp-validation-for="Cantidad" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Precio" class="form-label"></label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input asp-for="Precio" type="number" min="0" step="any" class="form-control" />
+                        <span class="input-group-text">COP</span>
+                    </div>
+                    <span asp-validation-for="Precio" class="text-danger small"></span>
+                </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-end mt-4">
+                <a asp-action="Index" class="btn btn-soft">Cancelar</a>
+                <button class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

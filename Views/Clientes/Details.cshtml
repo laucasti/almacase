@@ -1,0 +1,79 @@
+@model Cliente
+@{
+    ViewData["Title"] = Model.Nombre;
+    var totalComprado = Model.Ventas.Sum(v => v.Total);
+    var totalPagado = Model.Ventas.Sum(v => v.TotalPagado);
+    var deuda = Model.Ventas.Sum(v => Math.Max(v.Saldo, 0));
+}
+
+<div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+        <span class="avatar" style="width:60px;height:60px;font-size:1.6rem">@Model.Nombre.Substring(0, 1).ToUpper()</span>
+        <div>
+            <h1 class="page-title">@Model.Nombre</h1>
+            <p class="page-sub">Cliente desde @Model.FechaRegistro.Fecha()</p>
+        </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="Index" class="btn btn-soft"><i class="bi bi-arrow-left"></i> Volver</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-soft"><i class="bi bi-pencil"></i> Editar</a>
+        <a asp-controller="Ventas" asp-action="Create" asp-route-clienteId="@Model.Id" class="btn btn-primary"><i class="bi bi-bag-plus-fill"></i> Nueva venta</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-person-vcard me-1"></i> Datos de contacto</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><i class="bi bi-card-text text-azul me-2"></i>@(Model.Documento ?? "—")</li>
+                <li class="list-group-item"><i class="bi bi-whatsapp text-success me-2"></i>@(Model.Telefono ?? "—")</li>
+                <li class="list-group-item"><i class="bi bi-instagram text-azul me-2"></i>@(Model.Instagram ?? "—")</li>
+                <li class="list-group-item"><i class="bi bi-envelope text-azul me-2"></i>@(Model.Email ?? "—")</li>
+                <li class="list-group-item"><i class="bi bi-geo-alt text-azul me-2"></i>@(Model.Direccion ?? "—") @(Model.Ciudad != null ? "· " + Model.Ciudad : "")</li>
+            </ul>
+            @if (!Model.Ventas.Any())
+            {
+                <div class="card-body">
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" data-confirm="¿Eliminar este cliente?">
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Eliminar cliente</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="row g-3 h-100">
+            <div class="col-sm-4"><div class="card kpi"><div><div class="kpi-label">Total comprado</div><div class="kpi-valor">@totalComprado.Cop()</div><div class="kpi-extra">@Model.Ventas.Count compra(s)</div></div></div></div>
+            <div class="col-sm-4"><div class="card kpi"><div><div class="kpi-label">Total pagado</div><div class="kpi-valor text-pagado">@totalPagado.Cop()</div></div></div></div>
+            <div class="col-sm-4"><div class="card kpi @(deuda > 0 ? "" : "")"><div><div class="kpi-label">Debe</div><div class="kpi-valor @(deuda > 0 ? "text-deuda" : "text-pagado")">@deuda.Cop()</div></div></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><i class="bi bi-bag-heart me-1"></i> Historial de compras</div>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th class="text-end">Total</th><th class="text-end">Pagado</th><th class="text-end">Saldo</th><th>Estado</th></tr></thead>
+            <tbody>
+                @if (!Model.Ventas.Any())
+                {
+                    <tr><td colspan="7" class="vacio"><i class="bi bi-bag"></i>Este cliente aún no tiene compras</td></tr>
+                }
+                @foreach (var v in Model.Ventas)
+                {
+                    <tr role="button" onclick="location.href='@Url.Action("Details", "Ventas", new { id = v.Id })'">
+                        <td class="fw-bold text-azul">@v.Id</td>
+                        <td>@v.Fecha.Fecha()</td>
+                        <td class="small">@string.Join(", ", v.Detalles.Select(d => $"{d.Cantidad}× {d.Producto?.Nombre}"))</td>
+                        <td class="text-end">@v.Total.Cop()</td>
+                        <td class="text-end">@v.TotalPagado.Cop()</td>
+                        <td class="text-end @(v.Saldo > 0 ? "text-deuda fw-bold" : "")">@v.Saldo.Cop()</td>
+                        <td><span class="badge @Formato.ClaseEstado(v.Estado)">@v.Estado</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

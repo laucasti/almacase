@@ -1,0 +1,152 @@
+﻿@model ReporteAnualVM
+@{
+    ViewData["Title"] = "Reporte mensual";
+    var totalVendido = Model.Meses.Sum(m => m.TotalVendido);
+    var totalRecaudado = Model.Meses.Sum(m => m.TotalRecaudado);
+    var totalPendiente = Model.Meses.Sum(m => m.PendientePorCobrar);
+    var mesActual = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-bar-chart-fill"></i> Reporte mes a mes</h1>
+        <p class="page-sub">Totales de ventas, recaudo y cartera del año @Model.Anio</p>
+    </div>
+    <form method="get" class="d-flex gap-2 align-items-center no-print">
+        <select name="anio" class="form-select" onchange="this.form.submit()">
+            @foreach (var a in Model.AniosDisponibles)
+            {
+                <option value="@a" selected="@(a == Model.Anio)">@a</option>
+            }
+        </select>
+        <button type="button" onclick="window.print()" class="btn btn-soft text-nowrap"><i class="bi bi-printer"></i> Imprimir</button>
+    </form>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card kpi kpi-destacado">
+            <div class="kpi-icono"><i class="bi bi-cash-stack"></i></div>
+            <div><div class="kpi-label">Total vendido @Model.Anio</div><div class="kpi-valor">@totalVendido.Cop()</div>
+                <div class="kpi-extra">@Model.Meses.Sum(m => m.NumeroVentas) ventas · @Model.Meses.Sum(m => m.UnidadesVendidas) unidades</div></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card kpi">
+            <div class="kpi-icono verde"><i class="bi bi-wallet2"></i></div>
+            <div><div class="kpi-label">Total recaudado</div><div class="kpi-valor text-pagado">@totalRecaudado.Cop()</div><div class="kpi-extra">Dinero que realmente entró</div></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card kpi">
+            <div class="kpi-icono naranja"><i class="bi bi-hourglass-split"></i></div>
+            <div><div class="kpi-label">Pendiente de ventas del año</div><div class="kpi-valor text-deuda">@totalPendiente.Cop()</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-graph-up me-1"></i> Vendido vs. recaudado</div>
+    <div class="card-body"><canvas id="grafico" height="90"></canvas></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-table me-1"></i> Detalle por mes</div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr><th>Mes</th><th class="text-center">Ventas</th><th class="text-center">Und.</th><th class="text-end">Vendido</th><th class="text-end">Recaudado</th><th class="text-end">Pendiente</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model.Meses)
+                        {
+                            var esFuturo = new DateTime(m.Anio, m.Mes, 1) > mesActual;
+                            <tr class="@(esFuturo ? "text-secondary opacity-50" : "")">
+                                <td class="fw-bold">@Formato.NombreMes(m.Mes)</td>
+                                <td class="text-center">@m.NumeroVentas</td>
+                                <td class="text-center">@m.UnidadesVendidas</td>
+                                <td class="text-end fw-semibold">@m.TotalVendido.Cop()</td>
+                                <td class="text-end text-pagado">@m.TotalRecaudado.Cop()</td>
+                                <td class="text-end @(m.PendientePorCobrar > 0 ? "text-deuda" : "")">@m.PendientePorCobrar.Cop()</td>
+                                <td class="text-end no-print">
+                                    @if (m.NumeroVentas > 0)
+                                    {
+                                        <a asp-controller="Ventas" asp-action="Index" asp-route-mes="@($"{m.Anio}-{m.Mes:00}")" class="btn btn-soft btn-icono" title="Ver ventas del mes"><i class="bi bi-eye"></i></a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>TOTAL @Model.Anio</td>
+                            <td class="text-center">@Model.Meses.Sum(m => m.NumeroVentas)</td>
+                            <td class="text-center">@Model.Meses.Sum(m => m.UnidadesVendidas)</td>
+                            <td class="text-end">@totalVendido.Cop()</td>
+                            <td class="text-end">@totalRecaudado.Cop()</td>
+                            <td class="text-end">@totalPendiente.Cop()</td>
+                            <td class="no-print"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-trophy me-1"></i> Más vendidos del año</div>
+            <ul class="list-group list-group-flush">
+                @if (!Model.TopProductos.Any())
+                {
+                    <li class="list-group-item vacio py-4"><i class="bi bi-trophy"></i>Sin ventas este año</li>
+                }
+                @{ var maxUnd = Model.TopProductos.Any() ? Model.TopProductos.Max(t => t.Unidades) : 1; var pos = 1; }
+                @foreach (var t in Model.TopProductos)
+                {
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-semibold"><span class="text-azul me-1">@(pos++).</span> @t.Producto</span>
+                            <span class="small">@t.Unidades und.</span>
+                        </div>
+                        <div class="progress my-1"><div class="progress-bar" style="width:@(t.Unidades * 100 / maxUnd)%"></div></div>
+                        <div class="small text-secondary text-end">@t.Total.Cop()</div>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        const datos = @Json.Serialize(Model.Meses.Select(m => new {
+            mes = Formato.NombreMes(m.Mes).Substring(0, 3),
+            vendido = m.TotalVendido,
+            recaudado = m.TotalRecaudado,
+            pendiente = m.PendientePorCobrar
+        }));
+        new Chart(document.getElementById('grafico'), {
+            data: {
+                labels: datos.map(d => d.mes),
+                datasets: [
+                    { type: 'bar', label: 'Vendido', data: datos.map(d => d.vendido), backgroundColor: '#3D8BEA', borderRadius: 8 },
+                    { type: 'bar', label: 'Recaudado', data: datos.map(d => d.recaudado), backgroundColor: '#A9D3FB', borderRadius: 8 },
+                    { type: 'line', label: 'Pendiente', data: datos.map(d => d.pendiente), borderColor: '#1C3F7A', backgroundColor: '#1C3F7A', tension: .35, pointRadius: 4 }
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { family: 'Nunito', weight: 700 } } },
+                    tooltip: { callbacks: { label: c => c.dataset.label + ': ' + cop(c.raw) } }
+                },
+                scales: {
+                    y: { beginAtZero: true, suggestedMax: 100000, ticks: { callback: v => cop(v) }, grid: { color: '#EAF5FF' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    </script>
+}

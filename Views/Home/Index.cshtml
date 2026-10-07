@@ -1,0 +1,155 @@
+﻿@model DashboardVM
+@{
+    ViewData["Title"] = "Inicio";
+    var hoy = DateTime.Today;
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-stars"></i> ¡Hola, Alma Case!</h1>
+        <p class="page-sub">Resumen de @Formato.NombreMes(hoy.Month) @hoy.Year</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-controller="Productos" asp-action="Create" class="btn btn-soft"><i class="bi bi-plus-lg"></i> Producto</a>
+        <a asp-controller="Ventas" asp-action="Create" class="btn btn-primary"><i class="bi bi-bag-plus-fill"></i> Nueva venta</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card kpi kpi-destacado">
+            <div class="kpi-icono"><i class="bi bi-cash-stack"></i></div>
+            <div>
+                <div class="kpi-label">Vendido este mes</div>
+                <div class="kpi-valor">@Model.VendidoMes.Cop()</div>
+                <div class="kpi-extra">@Model.VentasMes venta(s)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card kpi">
+            <div class="kpi-icono verde"><i class="bi bi-wallet2"></i></div>
+            <div>
+                <div class="kpi-label">Recaudado este mes</div>
+                <div class="kpi-valor">@Model.RecaudadoMes.Cop()</div>
+                <div class="kpi-extra">Pagos y abonos recibidos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <a asp-controller="Ventas" asp-action="Pendientes" class="text-decoration-none">
+            <div class="card kpi">
+                <div class="kpi-icono naranja"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <div class="kpi-label">Por cobrar</div>
+                    <div class="kpi-valor text-deuda">@Model.TotalPorCobrar.Cop()</div>
+                    <div class="kpi-extra">@Model.ClientesConDeuda cliente(s) deben</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card kpi">
+            <div class="kpi-icono"><i class="bi bi-box-seam-fill"></i></div>
+            <div>
+                <div class="kpi-label">Inventario</div>
+                <div class="kpi-valor">@Model.UnidadesInventario <small class="fs-6 text-secondary">und.</small></div>
+                <div class="kpi-extra">@Model.TotalProductos productos · @Model.ValorInventario.Cop()</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up-arrow me-1"></i> Últimos 6 meses</span>
+                <a asp-controller="Reportes" asp-action="Index" class="btn btn-sm btn-soft">Ver reporte</a>
+            </div>
+            <div class="card-body">
+                <canvas id="graficoMeses" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-exclamation-diamond me-1"></i> Poco stock (≤ @AlmaCase.Controllers.HomeController.StockMinimo)</div>
+            <ul class="list-group list-group-flush">
+                @if (!Model.BajoStock.Any())
+                {
+                    <li class="list-group-item vacio py-4"><i class="bi bi-emoji-smile"></i>Todo el inventario está bien</li>
+                }
+                @foreach (var p in Model.BajoStock)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a asp-controller="Productos" asp-action="Edit" asp-route-id="@p.Id" class="text-decoration-none fw-semibold">@p.Nombre</a>
+                        <span class="badge @(p.Cantidad == 0 ? "badge-agotado" : "badge-stock-bajo")">@(p.Cantidad == 0 ? "Agotado" : p.Cantidad + " und.")</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history me-1"></i> Últimas ventas</span>
+                <a asp-controller="Ventas" asp-action="Index" class="btn btn-sm btn-soft">Ver todas</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead><tr><th>#</th><th>Fecha</th><th>Cliente</th><th class="text-end">Total</th><th class="text-end">Saldo</th><th>Estado</th></tr></thead>
+                    <tbody>
+                        @if (!Model.UltimasVentas.Any())
+                        {
+                            <tr><td colspan="6" class="vacio"><i class="bi bi-bag"></i>Aún no hay ventas registradas</td></tr>
+                        }
+                        @foreach (var v in Model.UltimasVentas)
+                        {
+                            <tr role="button" onclick="location.href='@Url.Action("Details", "Ventas", new { id = v.Id })'">
+                                <td class="fw-bold text-azul">@v.Id</td>
+                                <td>@v.Fecha.Fecha()</td>
+                                <td>@v.Cliente?.Nombre</td>
+                                <td class="text-end">@v.Total.Cop()</td>
+                                <td class="text-end @(v.Saldo > 0 ? "text-deuda fw-bold" : "")">@v.Saldo.Cop()</td>
+                                <td><span class="badge @Formato.ClaseEstado(v.Estado)">@v.Estado</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        const meses = @Json.Serialize(Model.UltimosMeses.Select(m => new {
+            etiqueta = Formato.NombreMes(m.Mes).Substring(0, 3) + " " + m.Anio,
+            vendido = m.TotalVendido,
+            recaudado = m.TotalRecaudado
+        }));
+        new Chart(document.getElementById('graficoMeses'), {
+            type: 'bar',
+            data: {
+                labels: meses.map(m => m.etiqueta),
+                datasets: [
+                    { label: 'Vendido', data: meses.map(m => m.vendido), backgroundColor: '#3D8BEA', borderRadius: 8 },
+                    { label: 'Recaudado', data: meses.map(m => m.recaudado), backgroundColor: '#A9D3FB', borderRadius: 8 }
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { family: 'Nunito', weight: 700 } } },
+                    tooltip: { callbacks: { label: c => c.dataset.label + ': ' + cop(c.raw) } }
+                },
+                scales: {
+                    y: { beginAtZero: true, suggestedMax: 100000, ticks: { callback: v => cop(v) }, grid: { color: '#EAF5FF' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    </script>
+}

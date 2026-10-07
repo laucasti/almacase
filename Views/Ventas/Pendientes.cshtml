@@ -1,0 +1,97 @@
+@model List<DeudorVM>
+@using System.Text.RegularExpressions
+@{
+    ViewData["Title"] = "Por cobrar";
+    var totalDeuda = Model.Sum(d => d.TotalDeuda);
+
+    // Enlace de WhatsApp para recordarle al cliente su saldo
+    string? WhatsApp(DeudorVM d)
+    {
+        var digitos = Regex.Replace(d.Cliente.Telefono ?? "", @"\D", "");
+        if (digitos.Length == 0) return null;
+        if (digitos.Length == 10) digitos = "57" + digitos;
+        var msg = $"¡Hola {d.Cliente.Nombre}! 💙 Te escribimos de Alma Case para recordarte que tienes un saldo pendiente de {d.TotalDeuda.Cop()}. ¡Gracias!";
+        return $"https://wa.me/{digitos}?text={Uri.EscapeDataString(msg)}";
+    }
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-hourglass-split"></i> Por cobrar</h1>
+        <p class="page-sub">Clientes que tienen saldo pendiente</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-4">
+        <div class="card kpi kpi-destacado">
+            <div class="kpi-icono"><i class="bi bi-cash-coin"></i></div>
+            <div>
+                <div class="kpi-label">Total por cobrar</div>
+                <div class="kpi-valor">@totalDeuda.Cop()</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-4">
+        <div class="card kpi">
+            <div class="kpi-icono naranja"><i class="bi bi-people"></i></div>
+            <div>
+                <div class="kpi-label">Clientes que deben</div>
+                <div class="kpi-valor">@Model.Count</div>
+                <div class="kpi-extra">@Model.Sum(d => d.Ventas.Count) venta(s) sin pagar completa</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card"><div class="vacio"><i class="bi bi-emoji-heart-eyes"></i>¡Nadie te debe! Todas las ventas están pagadas.</div></div>
+}
+
+@foreach (var d in Model)
+{
+    var wa = WhatsApp(d);
+    <div class="card deudor-card mb-3">
+        <div class="card-header">
+            <div class="d-flex align-items-center gap-2">
+                <span class="avatar">@d.Cliente.Nombre.Substring(0, 1).ToUpper()</span>
+                <div>
+                    <a asp-controller="Clientes" asp-action="Details" asp-route-id="@d.Cliente.Id" class="text-decoration-none">@d.Cliente.Nombre</a>
+                    <div class="small text-secondary fw-normal" style="font-family:Nunito">@d.Cliente.Telefono</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-end">
+                    <div class="small text-secondary fw-normal" style="font-family:Nunito">Debe</div>
+                    <div class="fs-5 text-deuda">@d.TotalDeuda.Cop()</div>
+                </div>
+                @if (wa != null)
+                {
+                    <a href="@wa" target="_blank" rel="noopener" class="btn btn-sm btn-success"><i class="bi bi-whatsapp"></i> Recordar</a>
+                }
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr><th>#</th><th>Fecha</th><th>Días</th><th>Productos</th><th class="text-end">Total</th><th class="text-end">Abonado</th><th class="text-end">Saldo</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var v in d.Ventas)
+                    {
+                        var dias = (DateTime.Today - v.Fecha.Date).Days;
+                        <tr>
+                            <td class="fw-bold text-azul">@v.Id</td>
+                            <td>@v.Fecha.Fecha()</td>
+                            <td><span class="badge @(dias > 30 ? "badge-pendiente" : dias > 15 ? "badge-abonada" : "badge-categoria")">@dias d</span></td>
+                            <td class="small">@string.Join(", ", v.Detalles.Select(x => $"{x.Cantidad}× {x.Producto?.Nombre}"))</td>
+                            <td class="text-end">@v.Total.Cop()</td>
+                            <td class="text-end">@v.TotalPagado.Cop()</td>
+                            <td class="text-end text-deuda fw-bold">@v.Saldo.Cop()</td>
+                            <td class="text-end"><a asp-action="Details" asp-route-id="@v.Id" class="btn btn-sm btn-primary"><i class="bi bi-cash-coin"></i> Cobrar</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

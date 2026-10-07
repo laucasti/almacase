@@ -1,0 +1,83 @@
+@model List<Venta>
+@{
+    ViewData["Title"] = "Ventas";
+    string? estado = ViewBag.Estado;
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-bag-heart-fill"></i> Ventas</h1>
+        <p class="page-sub">Compras que te hacen tus clientes</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-bag-plus-fill"></i> Nueva venta</a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Cliente</label>
+                <input name="q" value="@ViewBag.Q" class="form-control" placeholder="Nombre del cliente…" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Mes</label>
+                <input type="month" name="mes" value="@ViewBag.Mes" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    @foreach (var e in new[] { "Pendiente", "Abonada", "Pagada" })
+                    {
+                        <option value="@e" selected="@(e == estado)">@e</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-soft"><i class="bi bi-funnel"></i> Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>#</th><th>Fecha</th><th>Cliente</th><th class="text-center">Und.</th><th class="text-end">Total</th><th class="text-end">Pagado</th><th class="text-end">Saldo</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" class="vacio"><i class="bi bi-bag"></i>No hay ventas con esos filtros</td></tr>
+                }
+                @foreach (var v in Model)
+                {
+                    <tr role="button" onclick="location.href='@Url.Action("Details", new { id = v.Id })'">
+                        <td class="fw-bold text-azul">@v.Id</td>
+                        <td>@v.Fecha.Fecha()</td>
+                        <td>@v.Cliente?.Nombre</td>
+                        <td class="text-center">@v.Detalles.Sum(d => d.Cantidad)</td>
+                        <td class="text-end fw-semibold">@v.Total.Cop()</td>
+                        <td class="text-end">@v.TotalPagado.Cop()</td>
+                        <td class="text-end @(v.Saldo > 0 ? "text-deuda fw-bold" : "")">@v.Saldo.Cop()</td>
+                        <td><span class="badge @Formato.ClaseEstado(v.Estado)">@v.Estado</span></td>
+                    </tr>
+                }
+            </tbody>
+            @if (Model.Any())
+            {
+                <tfoot>
+                    <tr>
+                        <td colspan="3">Totales (@Model.Count ventas)</td>
+                        <td class="text-center">@Model.Sum(v => v.Detalles.Sum(d => d.Cantidad))</td>
+                        <td class="text-end">@Model.Sum(v => v.Total).Cop()</td>
+                        <td class="text-end">@Model.Sum(v => v.TotalPagado).Cop()</td>
+                        <td class="text-end text-deuda">@Model.Sum(v => v.Saldo).Cop()</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+</div>
