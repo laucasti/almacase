@@ -1,6 +1,7 @@
 using System.Globalization;
 using AlmaCase.Controllers;
 using AlmaCase.Data;
+using AlmaCase.Helpers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -36,7 +37,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         o.SlidingExpiration = true;
     });
 
-var cadena = builder.Configuration.GetConnectionString("AlmaCaseDb");
+var cadena = CadenaConexion.Normalizar(
+    builder.Configuration.GetConnectionString("AlmaCaseDb") ?? builder.Configuration["DATABASE_URL"]);
 builder.Services.AddDbContext<AppDbContext>(o =>
     o.UseMySql(cadena, new MySqlServerVersion(new Version(8, 0, 36)),
         my => my.EnableRetryOnFailure(3)));

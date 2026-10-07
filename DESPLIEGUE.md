@@ -36,9 +36,10 @@ La primera vez se abrirá una ventana para iniciar sesión en GitHub.
 ## Paso 2 — Crear la base de datos MySQL en Aiven
 
 1. Crea una cuenta en <https://aiven.io> → **Create service** → **MySQL** → plan **Free**.
-2. Cuando el servicio esté *Running*, en **Overview → Connection information** copia:
-   **Host**, **Port**, **User** (`avnadmin`) y **Password**.
-3. Arma tu cadena de conexión así (todo en una sola línea):
+2. Cuando el servicio esté *Running*, en **Overview → Connection information** copia el **Service URI**
+   (empieza por `mysql://avnadmin:...`). Esa es tu cadena de conexión, tal cual.
+
+   También sirve el formato clásico, en una sola línea:
 
 ```
 server=HOST;port=PUERTO;database=almacase_db;user=avnadmin;password=CONTRASEÑA;SslMode=Required
