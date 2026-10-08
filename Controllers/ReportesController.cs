@@ -41,7 +41,13 @@ public class ReportesController(AppDbContext db) : Controller
             AniosDisponibles = anios.Distinct().OrderByDescending(a => a).ToList(),
             Meses = await ReporteService.ResumenPorMesAsync(db, desde, hasta),
             TopProductos = top,
-            HayCostosIncompletos = await delAnio.AnyAsync(d => d.CostoUnitario <= 0)
+            HayCostosIncompletos = await delAnio.AnyAsync(d => d.CostoUnitario <= 0),
+            GastosPorCategoria = await db.Gastos.AsNoTracking()
+                .Where(g => g.Fecha >= desde && g.Fecha < hasta)
+                .GroupBy(g => g.Categoria)
+                .Select(g => new CategoriaTotalVM { Categoria = g.Key, Total = g.Sum(x => x.Monto), Cantidad = g.Count() })
+                .OrderByDescending(x => x.Total)
+                .ToListAsync()
         };
         return View(vm);
     }

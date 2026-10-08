@@ -45,6 +45,7 @@
                     <a class="nav-link @Activo("Clientes")" asp-controller="Clientes" asp-action="Index"><i class="bi bi-people-fill"></i> Clientes</a>
                     <a class="nav-link @(ctrl == "Ventas" && accion != "Pendientes" ? "active" : "")" asp-controller="Ventas" asp-action="Index"><i class="bi bi-bag-heart-fill"></i> Ventas</a>
                     <a class="nav-link @Activo("Ventas", "Pendientes")" asp-controller="Ventas" asp-action="Pendientes"><i class="bi bi-hourglass-split"></i> Por cobrar</a>
+                    <a class="nav-link @Activo("Gastos")" asp-controller="Gastos" asp-action="Index"><i class="bi bi-receipt-cutoff"></i> Gastos</a>
 
                     <span class="nav-section">Análisis</span>
                     <a class="nav-link @Activo("Reportes")" asp-controller="Reportes" asp-action="Index"><i class="bi bi-bar-chart-fill"></i> Reporte mensual</a>

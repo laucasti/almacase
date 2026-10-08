@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Venta> Ventas => Set<Venta>();
     public DbSet<DetalleVenta> DetallesVenta => Set<DetalleVenta>();
     public DbSet<Pago> Pagos => Set<Pago>();
+    public DbSet<Gasto> Gastos => Set<Gasto>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -38,5 +39,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         mb.Entity<Usuario>().HasIndex(u => u.NombreUsuario).IsUnique();
         mb.Entity<Venta>().HasIndex(v => v.Fecha);
         mb.Entity<Pago>().HasIndex(p => p.Fecha);
+        mb.Entity<Gasto>().HasIndex(g => g.Fecha);
     }
 }

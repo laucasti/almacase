@@ -4,6 +4,8 @@
     var totalVendido = Model.Meses.Sum(m => m.TotalVendido);
     var totalCosto = Model.Meses.Sum(m => m.CostoVendido);
     var totalGanancia = Model.Meses.Sum(m => m.Ganancia);
+    var totalGastos = Model.Meses.Sum(m => m.Gastos);
+    var totalNeta = Model.Meses.Sum(m => m.GananciaNeta);
     var totalRecaudado = Model.Meses.Sum(m => m.TotalRecaudado);
     var totalPendiente = Model.Meses.Sum(m => m.PendientePorCobrar);
     decimal? margenAnual = totalVendido > 0 ? totalGanancia * 100 / totalVendido : null;
@@ -46,8 +48,8 @@
     <div class="col-sm-6 col-xl-3">
         <div class="card kpi">
             <div class="kpi-icono verde"><i class="bi bi-graph-up-arrow"></i></div>
-            <div><div class="kpi-label">Ganancia</div><div class="kpi-valor @(totalGanancia >= 0 ? "text-pagado" : "text-deuda")">@totalGanancia.Cop()</div>
-                <div class="kpi-extra">Costo @totalCosto.Cop()@(margenAnual.HasValue ? $" · margen {margenAnual:0}%" : "")</div></div>
+            <div><div class="kpi-label">Ganancia neta</div><div class="kpi-valor @(totalNeta >= 0 ? "text-pagado" : "text-deuda")">@totalNeta.Cop()</div>
+                <div class="kpi-extra">Ventas @totalGanancia.Cop()@(margenAnual.HasValue ? $" ({margenAnual:0}%)" : "") − gastos @totalGastos.Cop()</div></div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
@@ -78,7 +80,8 @@
                     <thead>
                         <tr>
                             <th>Mes</th><th class="text-center">Ventas</th><th class="text-center">Und.</th>
-                            <th class="text-end">Vendido</th><th class="text-end">Costo</th><th class="text-end">Ganancia</th><th class="text-end">Margen</th>
+                            <th class="text-end">Vendido</th><th class="text-end">Costo</th><th class="text-end">Ganancia ventas</th><th class="text-end">Margen</th>
+                            <th class="text-end">Gastos</th><th class="text-end">Ganancia neta</th>
                             <th class="text-end">Recaudado</th><th class="text-end">Pendiente</th><th class="no-print"></th>
                         </tr>
                     </thead>
@@ -92,8 +95,16 @@
                                 <td class="text-center">@m.UnidadesVendidas</td>
                                 <td class="text-end fw-semibold">@m.TotalVendido.Cop()</td>
                                 <td class="text-end text-secondary">@m.CostoVendido.Cop()</td>
-                                <td class="text-end fw-bold @(m.Ganancia >= 0 ? "text-pagado" : "text-deuda")">@m.Ganancia.Cop()</td>
+                                <td class="text-end @(m.Ganancia >= 0 ? "text-pagado" : "text-deuda")">@m.Ganancia.Cop()</td>
                                 <td class="text-end">@(m.Margen.HasValue ? $"{m.Margen:0}%" : "—")</td>
+                                <td class="text-end">
+                                    @if (m.Gastos > 0)
+                                    {
+                                        <a asp-controller="Gastos" asp-action="Index" asp-route-mes="@($"{m.Anio}-{m.Mes:00}")" class="text-deuda text-decoration-none">@m.Gastos.Cop()</a>
+                                    }
+                                    else { @m.Gastos.Cop() }
+                                </td>
+                                <td class="text-end fw-bold @(m.GananciaNeta >= 0 ? "text-pagado" : "text-deuda")">@m.GananciaNeta.Cop()</td>
                                 <td class="text-end">@m.TotalRecaudado.Cop()</td>
                                 <td class="text-end @(m.PendientePorCobrar > 0 ? "text-deuda" : "")">@m.PendientePorCobrar.Cop()</td>
                                 <td class="text-end no-print">
@@ -112,8 +123,10 @@
                             <td class="text-center">@Model.Meses.Sum(m => m.UnidadesVendidas)</td>
                             <td class="text-end">@totalVendido.Cop()</td>
                             <td class="text-end">@totalCosto.Cop()</td>
-                            <td class="text-end text-pagado">@totalGanancia.Cop()</td>
+                            <td class="text-end">@totalGanancia.Cop()</td>
                             <td class="text-end">@(margenAnual.HasValue ? $"{margenAnual:0}%" : "—")</td>
+                            <td class="text-end">@totalGastos.Cop()</td>
+                            <td class="text-end text-pagado">@totalNeta.Cop()</td>
                             <td class="text-end">@totalRecaudado.Cop()</td>
                             <td class="text-end">@totalPendiente.Cop()</td>
                             <td class="no-print"></td>
@@ -123,8 +136,9 @@
             </div>
         </div>
         <p class="small text-secondary mt-2 mb-0">
-            <strong>Ganancia</strong> = lo vendido − lo que costaron esos productos (precio de compra), según la fecha de la venta.
-            Incluye ventas que aún no te han pagado completas.
+            <strong>Ganancia ventas</strong> = lo vendido − lo que costaron esos productos (precio de compra), según la fecha de la venta;
+            incluye ventas que aún no te han pagado completas.
+            <strong>Ganancia neta</strong> = ganancia ventas − gastos del mes (lo que realmente te queda).
         </p>
     </div>
     <div class="col-xxl-4">
@@ -152,6 +166,30 @@
                 }
             </ul>
         </div>
+
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-receipt-cutoff me-1"></i> Gastos del año</span>
+                <a asp-controller="Gastos" asp-action="Index" asp-route-mes="todos" class="btn btn-sm btn-soft no-print">Ver gastos</a>
+            </div>
+            <ul class="list-group list-group-flush">
+                @if (!Model.GastosPorCategoria.Any())
+                {
+                    <li class="list-group-item vacio py-4"><i class="bi bi-receipt"></i>Sin gastos registrados este año</li>
+                }
+                @foreach (var c in Model.GastosPorCategoria)
+                {
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-semibold"><i class="bi @Gasto.Icono(c.Categoria) text-azul me-1"></i> @c.Categoria</span>
+                            <span class="fw-bold text-deuda">@c.Total.Cop()</span>
+                        </div>
+                        <div class="progress my-1"><div class="progress-bar" style="width:@(totalGastos > 0 ? (int)(c.Total * 100 / totalGastos) : 0)%"></div></div>
+                        <div class="small text-secondary">@c.Cantidad gasto(s)</div>
+                    </li>
+                }
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -162,7 +200,7 @@
             mes = Formato.NombreMes(m.Mes).Substring(0, 3),
             vendido = m.TotalVendido,
             recaudado = m.TotalRecaudado,
-            ganancia = m.Ganancia
+            ganancia = m.GananciaNeta
         }));
         new Chart(document.getElementById('grafico'), {
             data: {
@@ -170,7 +208,7 @@
                 datasets: [
                     { type: 'bar', label: 'Vendido', data: datos.map(d => d.vendido), backgroundColor: '#3D8BEA', borderRadius: 8 },
                     { type: 'bar', label: 'Recaudado', data: datos.map(d => d.recaudado), backgroundColor: '#A9D3FB', borderRadius: 8 },
-                    { type: 'line', label: 'Ganancia', data: datos.map(d => d.ganancia), borderColor: '#1C3F7A', backgroundColor: '#1C3F7A', tension: .35, pointRadius: 4 }
+                    { type: 'line', label: 'Ganancia neta', data: datos.map(d => d.ganancia), borderColor: '#1C3F7A', backgroundColor: '#1C3F7A', tension: .35, pointRadius: 4 }
                 ]
             },
             options: {

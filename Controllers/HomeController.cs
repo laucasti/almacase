@@ -31,6 +31,7 @@ public class HomeController(AppDbContext db) : Controller
         {
             VendidoMes = actual.TotalVendido,
             GananciaMes = actual.Ganancia,
+            GastosMes = actual.Gastos,
             MargenMes = actual.Margen,
             CostoInventario = productos.Sum(p => p.Cantidad * p.PrecioCompra),
             RecaudadoMes = actual.TotalRecaudado,

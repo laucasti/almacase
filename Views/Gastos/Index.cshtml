@@ -1,0 +1,130 @@
+@model List<Gasto>
+@{
+    ViewData["Title"] = "Gastos";
+    var categorias = (List<string>)ViewBag.Categorias;
+    string mes = ViewBag.Mes;
+    string? mesNombre = ViewBag.MesNombre;
+    var total = Model.Sum(g => g.Monto);
+    var porCategoria = Model.GroupBy(g => g.Categoria)
+        .Select(g => new CategoriaTotalVM { Categoria = g.Key, Total = g.Sum(x => x.Monto), Cantidad = g.Count() })
+        .OrderByDescending(c => c.Total).ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="bi bi-receipt-cutoff"></i> Gastos</h1>
+        <p class="page-sub">Lo que gastas para mover el negocio: apps, transporte, publicidad, empaques…</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nuevo gasto</a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Buscar</label>
+                <input name="q" value="@ViewBag.Q" class="form-control" placeholder="CapCut, gasolina…" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Mes</label>
+                <input type="month" name="mes" value="@(mes == "todos" ? "" : mes)" class="form-control" id="filtroMes" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Categoría</label>
+                <select name="categoria" class="form-select">
+                    <option value="">Todas</option>
+                    @foreach (var c in categorias)
+                    {
+                        <option value="@c" selected="@(c == (string?)ViewBag.Categoria)">@c</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-soft"><i class="bi bi-funnel"></i> Filtrar</button>
+            </div>
+            <div class="col-12">
+                <a asp-action="Index" asp-route-mes="todos" class="small">Ver todos los meses</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-4 order-xl-2">
+        <div class="card kpi kpi-destacado mb-3">
+            <div class="kpi-icono"><i class="bi bi-receipt-cutoff"></i></div>
+            <div>
+                <div class="kpi-label">Total gastado @(mesNombre != null ? "en " + mesNombre : "")</div>
+                <div class="kpi-valor">@total.Cop()</div>
+                <div class="kpi-extra">@Model.Count gasto(s)</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pie-chart me-1"></i> Por categoría</div>
+            <ul class="list-group list-group-flush">
+                @if (!porCategoria.Any())
+                {
+                    <li class="list-group-item vacio py-4"><i class="bi bi-pie-chart"></i>Sin gastos</li>
+                }
+                @foreach (var c in porCategoria)
+                {
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-semibold"><i class="bi @Gasto.Icono(c.Categoria) text-azul me-1"></i> @c.Categoria</span>
+                            <span class="fw-bold">@c.Total.Cop()</span>
+                        </div>
+                        <div class="progress my-1"><div class="progress-bar" style="width:@(total > 0 ? (int)(c.Total * 100 / total) : 0)%"></div></div>
+                        <div class="small text-secondary">@c.Cantidad gasto(s) · @(total > 0 ? $"{c.Total * 100 / total:0}%" : "")</div>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-xl-8 order-xl-1">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Pago</th><th class="text-end">Monto</th><th class="text-end">Acciones</th></tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr><td colspan="6" class="vacio"><i class="bi bi-receipt"></i>No hay gastos registrados en este periodo</td></tr>
+                        }
+                        @foreach (var g in Model)
+                        {
+                            <tr>
+                                <td class="text-nowrap">@g.Fecha.Fecha()</td>
+                                <td>
+                                    <div class="fw-bold">@g.Concepto</div>
+                                    @if (!string.IsNullOrEmpty(g.Nota)) { <small class="text-secondary">@g.Nota</small> }
+                                </td>
+                                <td><span class="badge badge-categoria"><i class="bi @Gasto.Icono(g.Categoria)"></i> @g.Categoria</span></td>
+                                <td class="small">@g.MetodoPago</td>
+                                <td class="text-end fw-bold text-deuda">@g.Monto.Cop()</td>
+                                <td class="text-end text-nowrap">
+                                    <form asp-action="Repetir" asp-route-id="@g.Id" method="post" class="d-inline"
+                                          data-confirm="¿Registrar otra vez &quot;@g.Concepto&quot; por @g.Monto.Cop() con fecha de hoy?">
+                                        <button class="btn btn-soft btn-icono" title="Repetir hoy (ej. suscripción mensual)"><i class="bi bi-arrow-repeat"></i></button>
+                                    </form>
+                                    <a asp-action="Edit" asp-route-id="@g.Id" class="btn btn-soft btn-icono" title="Editar"><i class="bi bi-pencil"></i></a>
+                                    <form asp-action="Delete" asp-route-id="@g.Id" method="post" class="d-inline" data-confirm="¿Eliminar este gasto?">
+                                        <button class="btn btn-soft btn-icono text-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    @if (Model.Any())
+                    {
+                        <tfoot>
+                            <tr><td colspan="4">Total</td><td class="text-end">@total.Cop()</td><td></td></tr>
+                        </tfoot>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -24,6 +24,11 @@ public static class ReporteService
             .Select(p => new { p.Fecha, p.Monto })
             .ToListAsync();
 
+        var gastos = await db.Gastos.AsNoTracking()
+            .Where(g => g.Fecha >= desde && g.Fecha < hasta)
+            .Select(g => new { g.Fecha, g.Monto })
+            .ToListAsync();
+
         var resultado = new List<ResumenMes>();
         for (var m = desde; m < hasta; m = m.AddMonths(1))
         {
@@ -36,6 +41,7 @@ public static class ReporteService
                 UnidadesVendidas = delMes.Sum(v => v.Detalles.Sum(d => d.Cantidad)),
                 TotalVendido = delMes.Sum(v => v.Total),
                 CostoVendido = delMes.Sum(v => v.CostoTotal),
+                Gastos = gastos.Where(g => g.Fecha.Year == m.Year && g.Fecha.Month == m.Month).Sum(g => g.Monto),
                 PendientePorCobrar = delMes.Sum(v => Math.Max(v.Saldo, 0)),
                 TotalRecaudado = pagos.Where(p => p.Fecha.Year == m.Year && p.Fecha.Month == m.Month).Sum(p => p.Monto)
             });

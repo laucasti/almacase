@@ -57,12 +57,18 @@ public class ResumenMes
     public decimal CostoVendido { get; set; }
     public decimal Ganancia => TotalVendido - CostoVendido;
     public decimal? Margen => TotalVendido > 0 ? Ganancia * 100 / TotalVendido : null;
+    /// <summary>Gastos del negocio registrados en el mes.</summary>
+    public decimal Gastos { get; set; }
+    /// <summary>Lo que realmente queda: ganancia de las ventas menos los gastos.</summary>
+    public decimal GananciaNeta => Ganancia - Gastos;
 }
 
 public class DashboardVM
 {
     public decimal VendidoMes { get; set; }
     public decimal GananciaMes { get; set; }
+    public decimal GastosMes { get; set; }
+    public decimal GananciaNetaMes => GananciaMes - GastosMes;
     public decimal? MargenMes { get; set; }
     public decimal CostoInventario { get; set; }
     public decimal RecaudadoMes { get; set; }
@@ -91,6 +97,7 @@ public class ReporteAnualVM
     public List<int> AniosDisponibles { get; set; } = new();
     public List<ResumenMes> Meses { get; set; } = new();
     public List<ProductoVendidoVM> TopProductos { get; set; } = new();
+    public List<CategoriaTotalVM> GastosPorCategoria { get; set; } = new();
     /// <summary>Hay ventas del año con productos sin precio de compra (la ganancia sale más alta de lo real).</summary>
     public bool HayCostosIncompletos { get; set; }
 }

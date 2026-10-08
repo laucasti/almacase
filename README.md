@@ -13,6 +13,7 @@ Sistema para manejar el inventario, los clientes, las ventas y la cartera de **A
 | **Clientes** | Nombre, documento, WhatsApp, Instagram, correo, dirección y ciudad. La ficha del cliente muestra su historial de compras, lo que ha pagado y lo que debe. |
 | **Ventas** | Registrar las compras que te hacen: cliente, varios productos, precio (se puede ajustar para descuentos) y abono inicial. Descuenta el inventario automáticamente. Desde el detalle se registran **abonos/pagos** (efectivo, Nequi, Daviplata…) y se puede imprimir el recibo con el logo. |
 | **Por cobrar** | Quién te falta por pagar, cuánto debe cada cliente, hace cuántos días, y botón de **WhatsApp** para recordarle. |
+| **Gastos** | Gastos del negocio (CapCut Pro, gasolina, publicidad, empaques…) por categoría y mes, con atajos y botón *Repetir* para gastos mensuales. Se restan de la ganancia para obtener la **ganancia neta**. |
 | **Reporte mensual** | Totales **mes a mes** del año: número de ventas, unidades, total vendido, total recaudado y pendiente, con gráfico, total del año y productos más vendidos. |
 
 **Estados de una venta:** `Pendiente` (no ha pagado nada) · `Abonada` (pagó una parte) · `Pagada`.

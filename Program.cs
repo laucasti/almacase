@@ -84,6 +84,20 @@ using (var scope = app.Services.CreateScope())
         ) CHARACTER SET utf8mb4;
         """);
 
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS `Gastos` (
+            `Id` int NOT NULL AUTO_INCREMENT,
+            `Fecha` datetime(6) NOT NULL,
+            `Concepto` varchar(150) NOT NULL,
+            `Categoria` varchar(60) NOT NULL,
+            `Monto` decimal(14,2) NOT NULL,
+            `MetodoPago` varchar(30) NOT NULL,
+            `Nota` varchar(300) NULL,
+            PRIMARY KEY (`Id`),
+            KEY `IX_Gastos_Fecha` (`Fecha`)
+        ) CHARACTER SET utf8mb4;
+        """);
+
     // Columnas agregadas después (precio de compra y costo de cada venta).
     AgregarColumnaSiNoExiste(db, "Productos", "PrecioCompra", "decimal(14,2) NOT NULL DEFAULT 0");
     AgregarColumnaSiNoExiste(db, "DetallesVenta", "CostoUnitario", "decimal(14,2) NOT NULL DEFAULT 0");

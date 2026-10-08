@@ -31,9 +31,9 @@
             <div class="card kpi">
                 <div class="kpi-icono verde"><i class="bi bi-graph-up-arrow"></i></div>
                 <div>
-                    <div class="kpi-label">Ganancia este mes</div>
-                    <div class="kpi-valor @(Model.GananciaMes >= 0 ? "text-pagado" : "text-deuda")">@Model.GananciaMes.Cop()</div>
-                    <div class="kpi-extra">@(Model.MargenMes.HasValue ? $"Margen {Model.MargenMes:0}%" : "Vendido − precio de compra")</div>
+                    <div class="kpi-label">Ganancia neta del mes</div>
+                    <div class="kpi-valor @(Model.GananciaNetaMes >= 0 ? "text-pagado" : "text-deuda")">@Model.GananciaNetaMes.Cop()</div>
+                    <div class="kpi-extra">Ventas @Model.GananciaMes.Cop() − gastos @Model.GastosMes.Cop()</div>
                 </div>
             </div>
         </a>
@@ -142,7 +142,7 @@
             etiqueta = Formato.NombreMes(m.Mes).Substring(0, 3) + " " + m.Anio,
             vendido = m.TotalVendido,
             recaudado = m.TotalRecaudado,
-            ganancia = m.Ganancia
+            ganancia = m.GananciaNeta
         }));
         new Chart(document.getElementById('graficoMeses'), {
             type: 'bar',
@@ -151,7 +151,7 @@
                 datasets: [
                     { label: 'Vendido', data: meses.map(m => m.vendido), backgroundColor: '#3D8BEA', borderRadius: 8 },
                     { label: 'Recaudado', data: meses.map(m => m.recaudado), backgroundColor: '#A9D3FB', borderRadius: 8 },
-                    { type: 'line', label: 'Ganancia', data: meses.map(m => m.ganancia), borderColor: '#1C3F7A', backgroundColor: '#1C3F7A', tension: .35, pointRadius: 4 }
+                    { type: 'line', label: 'Ganancia neta', data: meses.map(m => m.ganancia), borderColor: '#1C3F7A', backgroundColor: '#1C3F7A', tension: .35, pointRadius: 4 }
                 ]
             },
             options: {
