@@ -35,7 +35,7 @@
                     <label asp-for="Descripcion" class="form-label"></label>
                     <textarea asp-for="Descripcion" class="form-control" rows="2" placeholder="Color, referencia, modelo compatible…"></textarea>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label asp-for="Cantidad" class="form-label"></label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
@@ -44,14 +44,37 @@
                     </div>
                     <span asp-validation-for="Cantidad" class="text-danger small"></span>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <label asp-for="PrecioCompra" class="form-label"></label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input asp-for="PrecioCompra" type="number" min="0" step="any" class="form-control" placeholder="Lo que te costó" />
+                    </div>
+                    <span asp-validation-for="PrecioCompra" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
                     <label asp-for="Precio" class="form-label"></label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>
-                        <input asp-for="Precio" type="number" min="0" step="any" class="form-control" />
-                        <span class="input-group-text">COP</span>
+                        <input asp-for="Precio" type="number" min="0" step="any" class="form-control" placeholder="A cuánto lo vendes" />
                     </div>
                     <span asp-validation-for="Precio" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <div class="bg-hielo rounded-4 p-3 d-flex flex-wrap gap-4 align-items-center">
+                        <div>
+                            <div class="small text-secondary">Ganancia por unidad</div>
+                            <div class="fs-4 fw-bold" id="gananciaUnidad" style="font-family:Fredoka">$ 0</div>
+                        </div>
+                        <div>
+                            <div class="small text-secondary">Margen</div>
+                            <div class="fs-4 fw-bold text-oscuro" id="margen" style="font-family:Fredoka">—</div>
+                        </div>
+                        <div>
+                            <div class="small text-secondary">Ganancia si vendes todo el stock</div>
+                            <div class="fs-4 fw-bold text-oscuro" id="gananciaStock" style="font-family:Fredoka">$ 0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="d-flex gap-2 justify-content-end mt-4">
@@ -62,4 +85,22 @@
     </div>
 </div>
 
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const compra = document.getElementById('PrecioCompra');
+        const venta = document.getElementById('Precio');
+        const cantidad = document.getElementById('Cantidad');
+        function calcularGanancia() {
+            const c = parseFloat(compra.value) || 0, v = parseFloat(venta.value) || 0, q = parseInt(cantidad.value) || 0;
+            const g = v - c;
+            const el = document.getElementById('gananciaUnidad');
+            el.textContent = cop(g);
+            el.className = 'fs-4 fw-bold ' + (g < 0 ? 'text-deuda' : 'text-pagado');
+            document.getElementById('margen').textContent = c > 0 && v > 0 ? Math.round(g * 100 / v) + '%' : '—';
+            document.getElementById('gananciaStock').textContent = cop(g * q);
+        }
+        [compra, venta, cantidad].forEach(i => i.addEventListener('input', calcularGanancia));
+        calcularGanancia();
+    </script>
+}

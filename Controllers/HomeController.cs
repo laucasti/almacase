@@ -30,6 +30,9 @@ public class HomeController(AppDbContext db) : Controller
         var vm = new DashboardVM
         {
             VendidoMes = actual.TotalVendido,
+            GananciaMes = actual.Ganancia,
+            MargenMes = actual.Margen,
+            CostoInventario = productos.Sum(p => p.Cantidad * p.PrecioCompra),
             RecaudadoMes = actual.TotalRecaudado,
             VentasMes = actual.NumeroVentas,
             TotalPorCobrar = conDeuda.Sum(v => v.Saldo),

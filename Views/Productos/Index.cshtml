@@ -8,7 +8,16 @@
 <div class="page-header">
     <div>
         <h1 class="page-title"><i class="bi bi-phone-fill"></i> Productos</h1>
-        <p class="page-sub">@Model.Count producto(s) · @Model.Sum(p => p.Cantidad) unidades · valor @Model.Sum(p => p.Cantidad * p.Precio).Cop()</p>
+        <p class="page-sub">
+            @Model.Count producto(s) · @Model.Sum(p => p.Cantidad) unidades ·
+            costó @Model.Sum(p => p.Cantidad * p.PrecioCompra).Cop() ·
+            se vende en @Model.Sum(p => p.Cantidad * p.Precio).Cop() ·
+            <span class="text-pagado fw-bold">ganancia posible @Model.Sum(p => p.Cantidad * p.GananciaUnidad).Cop()</span>
+        </p>
+        @if (Model.Any(p => p.PrecioCompra <= 0))
+        {
+            <p class="small text-deuda mb-0 mt-1"><i class="bi bi-exclamation-circle"></i> @Model.Count(p => p.PrecioCompra <= 0) producto(s) sin precio de compra: edítalos para que la ganancia sea correcta.</p>
+        }
     </div>
     <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nuevo producto</a>
 </div>
@@ -50,12 +59,12 @@
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
-                <tr><th>Producto</th><th>Categoría</th><th class="text-center">Cantidad</th><th class="text-end">Precio</th><th class="text-end">Valor en stock</th><th class="text-end">Acciones</th></tr>
+                <tr><th>Producto</th><th>Categoría</th><th class="text-center">Cantidad</th><th class="text-end">Compra</th><th class="text-end">Venta</th><th class="text-end">Ganancia und.</th><th class="text-end">Valor en stock</th><th class="text-end">Acciones</th></tr>
             </thead>
             <tbody>
                 @if (!Model.Any())
                 {
-                    <tr><td colspan="6" class="vacio"><i class="bi bi-phone"></i>No hay productos. ¡Agrega el primero!</td></tr>
+                    <tr><td colspan="8" class="vacio"><i class="bi bi-phone"></i>No hay productos. ¡Agrega el primero!</td></tr>
                 }
                 @foreach (var p in Model)
                 {
@@ -67,7 +76,19 @@
                         </td>
                         <td>@if (!string.IsNullOrEmpty(p.Categoria)) { <span class="badge badge-categoria">@p.Categoria</span> }</td>
                         <td class="text-center"><span class="badge @badge">@(p.Cantidad == 0 ? "Agotado" : p.Cantidad.ToString())</span></td>
+                        <td class="text-end text-secondary">
+                            @if (p.PrecioCompra > 0) { @p.PrecioCompra.Cop() }
+                            else { <a asp-action="Edit" asp-route-id="@p.Id" class="badge badge-pendiente text-decoration-none" title="Agregar precio de compra">Sin dato</a> }
+                        </td>
                         <td class="text-end fw-semibold">@p.Precio.Cop()</td>
+                        <td class="text-end">
+                            @if (p.PrecioCompra > 0)
+                            {
+                                <div class="fw-bold @(p.GananciaUnidad >= 0 ? "text-pagado" : "text-deuda")">@p.GananciaUnidad.Cop()</div>
+                                <small class="text-secondary">@($"{p.Margen:0}%")</small>
+                            }
+                            else { <span class="text-secondary">—</span> }
+                        </td>
                         <td class="text-end">@((p.Cantidad * p.Precio).Cop())</td>
                         <td class="text-end text-nowrap">
                             @if (p.Activo)

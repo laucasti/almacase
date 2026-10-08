@@ -62,7 +62,7 @@
                                     <option value="">— Producto —</option>
                                     @foreach (var p in productos)
                                     {
-                                        <option value="@p.Id" data-precio="@p.Precio.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-stock="@p.Cantidad"
+                                        <option value="@p.Id" data-precio="@p.Precio.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-costo="@p.PrecioCompra.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-stock="@p.Cantidad"
                                                 disabled="@(p.Cantidad == 0)" selected="@(p.Id == item.ProductoId)">
                                             @p.Nombre (@(p.Cantidad == 0 ? "agotado" : p.Cantidad + " disp."))
                                         </option>
@@ -99,6 +99,11 @@
                     <hr />
                     <div class="text-secondary small">Total a pagar</div>
                     <div class="resumen-total" id="totGeneral">$0</div>
+                    <div class="d-flex justify-content-between small mt-1">
+                        <span class="text-secondary">Ganancia estimada</span>
+                        <strong id="totGanancia" class="text-pagado">$0</strong>
+                    </div>
+                    <div class="small text-secondary d-none" id="avisoCosto"><i class="bi bi-info-circle"></i> Hay productos sin precio de compra.</div>
 
                     <div class="mt-3">
                         <label asp-for="AbonoInicial" class="form-label"></label>
@@ -136,7 +141,7 @@
 
         function recalcular() {
             total = 0;
-            let unidades = 0;
+            let unidades = 0, costo = 0, sinCosto = false;
             const pedidos = {};
             contenedor.querySelectorAll('.item-row').forEach(fila => {
                 const sel = fila.querySelector('.sel-producto');
@@ -146,8 +151,18 @@
                 fila.querySelector('.subtotal').textContent = cop(sub);
                 total += sub;
                 unidades += cant;
-                if (sel.value) pedidos[sel.value] = (pedidos[sel.value] || 0) + cant;
+                if (sel.value) {
+                    pedidos[sel.value] = (pedidos[sel.value] || 0) + cant;
+                    const c = parseFloat(sel.selectedOptions[0].dataset.costo) || 0;
+                    if (c <= 0) sinCosto = true;
+                    costo += c * cant;
+                }
             });
+            const ganancia = total - costo;
+            const elG = document.getElementById('totGanancia');
+            elG.textContent = cop(ganancia) + (total > 0 && costo > 0 ? ` (${Math.round(ganancia * 100 / total)}%)` : '');
+            elG.className = ganancia < 0 ? 'text-deuda' : 'text-pagado';
+            document.getElementById('avisoCosto').classList.toggle('d-none', !sinCosto);
             // Aviso si se pide más de lo que hay en inventario
             contenedor.querySelectorAll('.item-row').forEach(fila => {
                 const sel = fila.querySelector('.sel-producto');

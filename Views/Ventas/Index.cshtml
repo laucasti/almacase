@@ -44,12 +44,12 @@
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
-                <tr><th>#</th><th>Fecha</th><th>Cliente</th><th class="text-center">Und.</th><th class="text-end">Total</th><th class="text-end">Pagado</th><th class="text-end">Saldo</th><th>Estado</th></tr>
+                <tr><th>#</th><th>Fecha</th><th>Cliente</th><th class="text-center">Und.</th><th class="text-end">Total</th><th class="text-end">Ganancia</th><th class="text-end">Pagado</th><th class="text-end">Saldo</th><th>Estado</th></tr>
             </thead>
             <tbody>
                 @if (!Model.Any())
                 {
-                    <tr><td colspan="8" class="vacio"><i class="bi bi-bag"></i>No hay ventas con esos filtros</td></tr>
+                    <tr><td colspan="9" class="vacio"><i class="bi bi-bag"></i>No hay ventas con esos filtros</td></tr>
                 }
                 @foreach (var v in Model)
                 {
@@ -59,6 +59,9 @@
                         <td>@v.Cliente?.Nombre</td>
                         <td class="text-center">@v.Detalles.Sum(d => d.Cantidad)</td>
                         <td class="text-end fw-semibold">@v.Total.Cop()</td>
+                        <td class="text-end @(v.Ganancia >= 0 ? "text-pagado" : "text-deuda")" title="@(v.CostoIncompleto ? "Algún producto no tiene precio de compra" : "")">
+                            @v.Ganancia.Cop()@if (v.CostoIncompleto) { <sup class="text-secondary">*</sup> }
+                        </td>
                         <td class="text-end">@v.TotalPagado.Cop()</td>
                         <td class="text-end @(v.Saldo > 0 ? "text-deuda fw-bold" : "")">@v.Saldo.Cop()</td>
                         <td><span class="badge @Formato.ClaseEstado(v.Estado)">@v.Estado</span></td>
@@ -72,6 +75,7 @@
                         <td colspan="3">Totales (@Model.Count ventas)</td>
                         <td class="text-center">@Model.Sum(v => v.Detalles.Sum(d => d.Cantidad))</td>
                         <td class="text-end">@Model.Sum(v => v.Total).Cop()</td>
+                        <td class="text-end text-pagado">@Model.Sum(v => v.Ganancia).Cop()</td>
                         <td class="text-end">@Model.Sum(v => v.TotalPagado).Cop()</td>
                         <td class="text-end text-deuda">@Model.Sum(v => v.Saldo).Cop()</td>
                         <td></td>
@@ -81,3 +85,7 @@
         </table>
     </div>
 </div>
+@if (Model.Any(v => v.CostoIncompleto))
+{
+    <p class="small text-secondary mt-2"><sup>*</sup> Ventas con productos sin precio de compra: la ganancia aparece más alta de lo real.</p>
+}

@@ -74,6 +74,14 @@ desde el menú (ícono 🔑). Cambiar `Admin__Password` en Render más adelante 
 
 ---
 
+### ¿Olvidaste la contraseña?
+
+En Render → **Environment**, pon la contraseña nueva en `Admin__Password` y agrega la variable
+`Admin__Restablecer` = `true`. Guarda, espera a que se reinicie, entra con la nueva contraseña
+y luego **borra** `Admin__Restablecer` (si la dejas, cada reinicio vuelve a poner esa contraseña).
+
+---
+
 ## Actualizar la página después de hacer cambios
 
 Cada vez que subes cambios a GitHub, Render vuelve a publicar automáticamente:

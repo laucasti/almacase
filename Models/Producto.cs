@@ -30,6 +30,19 @@ public class Producto
     [Display(Name = "Precio de venta")]
     public decimal Precio { get; set; }
 
+    [Range(0, 999999999, ErrorMessage = "El precio de compra no es válido")]
+    [Column(TypeName = "decimal(14,2)")]
+    [Display(Name = "Precio de compra")]
+    public decimal PrecioCompra { get; set; }
+
+    /// <summary>Lo que se gana por cada unidad vendida al precio de venta.</summary>
+    [NotMapped]
+    public decimal GananciaUnidad => Precio - PrecioCompra;
+
+    /// <summary>Porcentaje de ganancia sobre el precio de venta.</summary>
+    [NotMapped]
+    public decimal? Margen => Precio > 0 && PrecioCompra > 0 ? GananciaUnidad * 100 / Precio : null;
+
     [Display(Name = "Fecha de registro")]
     public DateTime FechaRegistro { get; set; } = DateTime.Now;
 

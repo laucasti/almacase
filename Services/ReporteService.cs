@@ -35,6 +35,7 @@ public static class ReporteService
                 NumeroVentas = delMes.Count,
                 UnidadesVendidas = delMes.Sum(v => v.Detalles.Sum(d => d.Cantidad)),
                 TotalVendido = delMes.Sum(v => v.Total),
+                CostoVendido = delMes.Sum(v => v.CostoTotal),
                 PendientePorCobrar = delMes.Sum(v => Math.Max(v.Saldo, 0)),
                 TotalRecaudado = pagos.Where(p => p.Fecha.Year == m.Year && p.Fecha.Month == m.Month).Sum(p => p.Monto)
             });

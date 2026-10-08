@@ -19,10 +19,18 @@ public class ReportesController(AppDbContext db) : Controller
         anios.Add(DateTime.Today.Year);
         anios.Add(año);
 
-        var top = await db.DetallesVenta.AsNoTracking()
-            .Where(d => d.Venta!.Fecha >= desde && d.Venta.Fecha < hasta)
+        var delAnio = db.DetallesVenta.AsNoTracking()
+            .Where(d => d.Venta!.Fecha >= desde && d.Venta.Fecha < hasta);
+
+        var top = await delAnio
             .GroupBy(d => d.Producto!.Nombre)
-            .Select(g => new { Producto = g.Key, Unidades = g.Sum(d => d.Cantidad), Total = g.Sum(d => d.Subtotal) })
+            .Select(g => new ProductoVendidoVM
+            {
+                Producto = g.Key,
+                Unidades = g.Sum(d => d.Cantidad),
+                Total = g.Sum(d => d.Subtotal),
+                Costo = g.Sum(d => d.CostoUnitario * d.Cantidad)
+            })
             .OrderByDescending(x => x.Unidades)
             .Take(10)
             .ToListAsync();
@@ -32,7 +40,8 @@ public class ReportesController(AppDbContext db) : Controller
             Anio = año,
             AniosDisponibles = anios.Distinct().OrderByDescending(a => a).ToList(),
             Meses = await ReporteService.ResumenPorMesAsync(db, desde, hasta),
-            TopProductos = top.Select(t => (t.Producto, t.Unidades, t.Total)).ToList()
+            TopProductos = top,
+            HayCostosIncompletos = await delAnio.AnyAsync(d => d.CostoUnitario <= 0)
         };
         return View(vm);
     }

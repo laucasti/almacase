@@ -78,6 +78,39 @@
 
     <div class="col-xl-4 no-print">
         <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-graph-up-arrow me-1"></i> Ganancia de esta venta <span class="small fw-normal text-secondary">(solo tú la ves)</span></div>
+            <ul class="list-group list-group-flush">
+                @foreach (var d in Model.Detalles)
+                {
+                    <li class="list-group-item small">
+                        <div class="fw-semibold">@d.Cantidad× @d.Producto?.Nombre</div>
+                        <div class="d-flex justify-content-between text-secondary">
+                            <span>
+                                @if (d.CostoUnitario > 0) { <text>Costo @d.CostoTotal.Cop() → venta @d.Subtotal.Cop()</text> }
+                                else { <span class="badge badge-pendiente">Sin precio de compra</span> }
+                            </span>
+                            <strong class="@(d.Ganancia >= 0 ? "text-pagado" : "text-deuda")">@d.Ganancia.Cop()</strong>
+                        </div>
+                    </li>
+                }
+                <li class="list-group-item d-flex justify-content-between align-items-center bg-hielo">
+                    <span class="fw-bold text-oscuro">Ganancia total</span>
+                    <span class="fs-5 fw-bold @(Model.Ganancia >= 0 ? "text-pagado" : "text-deuda")" style="font-family:Fredoka">
+                        @Model.Ganancia.Cop()
+                        @if (Model.Total > 0 && Model.CostoTotal > 0) { <small class="fs-6 text-secondary">(@($"{Model.Ganancia * 100 / Model.Total:0}%"))</small> }
+                    </span>
+                </li>
+            </ul>
+            @if (Model.CostoIncompleto)
+            {
+                <div class="card-body small text-secondary pt-2">
+                    <i class="bi bi-info-circle"></i> Algún producto no tenía precio de compra, así que la ganancia aparece más alta de lo real.
+                    Edita el producto, ponle el precio de compra y se completa automáticamente.
+                </div>
+            }
+        </div>
+
+        <div class="card mb-3">
             <div class="card-header"><i class="bi bi-pie-chart me-1"></i> Estado del pago</div>
             <div class="card-body">
                 <div class="d-flex justify-content-between small mb-1"><span>Pagado @porcentaje%</span><span>@Model.TotalPagado.Cop() / @Model.Total.Cop()</span></div>

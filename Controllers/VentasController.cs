@@ -84,7 +84,8 @@ public class VentasController(AppDbContext db) : Controller
                 ProductoId = item.ProductoId,
                 Cantidad = item.Cantidad,
                 PrecioUnitario = precio,
-                Subtotal = precio * item.Cantidad
+                Subtotal = precio * item.Cantidad,
+                CostoUnitario = productos[item.ProductoId].PrecioCompra
             });
         }
         venta.Total = venta.Detalles.Sum(d => d.Subtotal);

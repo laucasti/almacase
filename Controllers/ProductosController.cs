@@ -70,8 +70,19 @@ public class ProductosController(AppDbContext db) : Controller
         actual.Descripcion = producto.Descripcion;
         actual.Cantidad = producto.Cantidad;
         actual.Precio = producto.Precio;
+        actual.PrecioCompra = producto.PrecioCompra;
         await db.SaveChangesAsync();
-        TempData["Ok"] = $"Producto \"{actual.Nombre}\" actualizado.";
+
+        // Las ventas de este producto que se hicieron sin precio de compra toman este costo,
+        // para que su ganancia quede bien calculada. Las que ya tenían costo no cambian.
+        var completadas = 0;
+        if (producto.PrecioCompra > 0)
+            completadas = await db.DetallesVenta
+                .Where(d => d.ProductoId == id && d.CostoUnitario == 0)
+                .ExecuteUpdateAsync(s => s.SetProperty(d => d.CostoUnitario, producto.PrecioCompra));
+
+        TempData["Ok"] = $"Producto \"{actual.Nombre}\" actualizado." +
+            (completadas > 0 ? $" Se completó el costo en {completadas} venta(s) anteriores." : "");
         return RedirectToAction(nameof(Index));
     }
 

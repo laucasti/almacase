@@ -84,6 +84,10 @@ using (var scope = app.Services.CreateScope())
         ) CHARACTER SET utf8mb4;
         """);
 
+    // Columnas agregadas después (precio de compra y costo de cada venta).
+    AgregarColumnaSiNoExiste(db, "Productos", "PrecioCompra", "decimal(14,2) NOT NULL DEFAULT 0");
+    AgregarColumnaSiNoExiste(db, "DetallesVenta", "CostoUnitario", "decimal(14,2) NOT NULL DEFAULT 0");
+
     CuentaController.CrearAdminInicial(db, app.Configuration, app.Logger);
 }
 
@@ -118,3 +122,13 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.Run();
+
+// Agrega una columna a una tabla existente sin perder datos (MySQL no tiene "ADD COLUMN IF NOT EXISTS").
+static void AgregarColumnaSiNoExiste(AppDbContext db, string tabla, string columna, string definicion)
+{
+    var existe = db.Database.SqlQueryRaw<int>(
+        "SELECT COUNT(*) AS Value FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = {0} AND COLUMN_NAME = {1}",
+        tabla, columna).AsEnumerable().First() > 0;
+    if (!existe)
+        db.Database.ExecuteSqlRaw($"ALTER TABLE `{tabla}` ADD COLUMN `{columna}` {definicion};");
+}

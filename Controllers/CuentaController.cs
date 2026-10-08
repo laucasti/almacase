@@ -28,7 +28,7 @@ public class CuentaController(AppDbContext db) : Controller
 
         var usuario = await db.Usuarios.FirstOrDefaultAsync(u => u.NombreUsuario == vm.Usuario.Trim());
         var ok = usuario != null &&
-                 Hasher.VerifyHashedPassword(usuario, usuario.PasswordHash, vm.Password) != PasswordVerificationResult.Failed;
+                 Hasher.VerifyHashedPassword(usuario, usuario.PasswordHash, vm.Password.Trim()) != PasswordVerificationResult.Failed;
 
         if (!ok)
         {
@@ -69,13 +69,13 @@ public class CuentaController(AppDbContext db) : Controller
         var usuario = await db.Usuarios.FindAsync(id);
         if (usuario == null) return RedirectToAction(nameof(Login));
 
-        if (Hasher.VerifyHashedPassword(usuario, usuario.PasswordHash, vm.Actual) == PasswordVerificationResult.Failed)
+        if (Hasher.VerifyHashedPassword(usuario, usuario.PasswordHash, vm.Actual.Trim()) == PasswordVerificationResult.Failed)
         {
             ModelState.AddModelError(nameof(vm.Actual), "La contraseña actual no es correcta.");
             return View(vm);
         }
 
-        usuario.PasswordHash = Hasher.HashPassword(usuario, vm.Nueva);
+        usuario.PasswordHash = Hasher.HashPassword(usuario, vm.Nueva.Trim());
         await db.SaveChangesAsync();
         TempData["Ok"] = "Contraseña actualizada.";
         return RedirectToAction("Index", "Home");
@@ -85,22 +85,41 @@ public class CuentaController(AppDbContext db) : Controller
     /// Crea el usuario administrador la primera vez, con los datos de la configuración
     /// (Admin:Usuario y Admin:Password). Si ya existen usuarios no hace nada.
     /// </summary>
+    /// <remarks>
+    /// Si Admin:Restablecer = true, en cada arranque fija la contraseña de Admin:Usuario
+    /// (y lo crea si no existe). Sirve para recuperar el acceso; luego se debe quitar.
+    /// </remarks>
     public static void CrearAdminInicial(AppDbContext db, IConfiguration config, ILogger logger)
     {
-        if (db.Usuarios.Any()) return;
+        var nombreUsuario = config["Admin:Usuario"]?.Trim();
+        var password = config["Admin:Password"]?.Trim(); // evita espacios pegados por error
+        var restablecer = string.Equals(config["Admin:Restablecer"]?.Trim(), "true", StringComparison.OrdinalIgnoreCase);
+        var hayUsuarios = db.Usuarios.Any();
 
-        var nombreUsuario = config["Admin:Usuario"];
-        var password = config["Admin:Password"];
-        if (string.IsNullOrWhiteSpace(nombreUsuario) || string.IsNullOrWhiteSpace(password))
+        if (hayUsuarios && !restablecer)
         {
-            logger.LogWarning("No hay usuarios. Configure Admin:Usuario y Admin:Password para crear el administrador.");
+            logger.LogInformation("Usuarios registrados: {Usuarios}",
+                string.Join(", ", db.Usuarios.Select(u => u.NombreUsuario)));
             return;
         }
 
-        var admin = new Usuario { NombreUsuario = nombreUsuario.Trim(), Nombre = "Administrador" };
+        if (string.IsNullOrWhiteSpace(nombreUsuario) || string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogWarning("No hay usuarios. Configure Admin__Usuario y Admin__Password (con dos guiones bajos) para crear el administrador.");
+            return;
+        }
+
+        var admin = db.Usuarios.FirstOrDefault(u => u.NombreUsuario == nombreUsuario);
+        if (admin == null)
+        {
+            admin = new Usuario { NombreUsuario = nombreUsuario, Nombre = "Administrador" };
+            db.Usuarios.Add(admin);
+        }
         admin.PasswordHash = Hasher.HashPassword(admin, password);
-        db.Usuarios.Add(admin);
         db.SaveChanges();
-        logger.LogInformation("Usuario administrador '{Usuario}' creado.", admin.NombreUsuario);
+
+        logger.LogWarning(restablecer
+            ? "Contraseña del usuario '{Usuario}' restablecida. Quite la variable Admin__Restablecer."
+            : "Usuario administrador '{Usuario}' creado.", admin.NombreUsuario);
     }
 }

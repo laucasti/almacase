@@ -31,6 +31,16 @@ public class Venta
 
     [NotMapped]
     public string Estado => Saldo <= 0 ? "Pagada" : TotalPagado > 0 ? "Abonada" : "Pendiente";
+
+    [NotMapped]
+    public decimal CostoTotal => Detalles.Sum(d => d.CostoTotal);
+
+    [NotMapped]
+    public decimal Ganancia => Total - CostoTotal;
+
+    /// <summary>True si algún producto de la venta no tiene precio de compra registrado.</summary>
+    [NotMapped]
+    public bool CostoIncompleto => Detalles.Any(d => d.CostoUnitario <= 0);
 }
 
 public class DetalleVenta
@@ -50,6 +60,16 @@ public class DetalleVenta
 
     [Column(TypeName = "decimal(14,2)")]
     public decimal Subtotal { get; set; }
+
+    /// <summary>Precio de compra del producto en el momento de la venta.</summary>
+    [Column(TypeName = "decimal(14,2)")]
+    public decimal CostoUnitario { get; set; }
+
+    [NotMapped]
+    public decimal CostoTotal => CostoUnitario * Cantidad;
+
+    [NotMapped]
+    public decimal Ganancia => Subtotal - CostoTotal;
 }
 
 /// <summary>Pago o abono que hace un cliente sobre una venta.</summary>
